@@ -24,11 +24,15 @@ class InverterState:
     """Historic values for numeric types."""
     historynn: dict[Sensor, list[ValType]] = field(init=False)
     """Historic values for non-numeric types."""
+    zero_filter: int = 3
+    """Consecutive zero reads required before accepting a zero value (0=disabled)."""
+    _zero_count: dict[Sensor, int] = field(init=False)
 
     def __post_init__(self) -> None:
         """Post init."""
         self.historynn = defaultdict(list)
         self.history = defaultdict(list)
+        self._zero_count = defaultdict(int)
 
     def __getitem__(self, sensor: Sensor) -> ValType:
         """Get the current value of a sensor."""
@@ -87,6 +91,20 @@ class InverterState:
 
             newv = sen.reg_to_value(regs)
             _LOG.debug("register %s = %s (old=%s)", sen.address, oldv, newv)
+
+            # Zero filter: ignore sporadic zero readings from modbus
+            if self.zero_filter and isinstance(newv, (int, float)) and not isinstance(sen, (RWSensor, BinarySensor)):
+                if newv == 0:
+                    self._zero_count[sen] += 1
+                    if self._zero_count[sen] < self.zero_filter and oldv is not None and oldv != 0:
+                        _LOG.debug(
+                            "zero_filter: ignoring zero for %s (%d/%d)",
+                            sen.name, self._zero_count[sen], self.zero_filter,
+                        )
+                        continue
+                else:
+                    self._zero_count[sen] = 0
+
             if oldv != newv:
                 self.values[sen] = newv
                 changed[sen] = (newv, oldv)
