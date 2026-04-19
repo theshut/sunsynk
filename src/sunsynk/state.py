@@ -97,7 +97,7 @@ class InverterState:
                 if newv == 0:
                     self._zero_count[sen] += 1
                     if self._zero_count[sen] < self.zero_filter and oldv is not None and oldv != 0:
-                        _LOG.debug(
+                        _LOG.warning(
                             "zero_filter: ignoring zero for %s (%d/%d)",
                             sen.name, self._zero_count[sen], self.zero_filter,
                         )
