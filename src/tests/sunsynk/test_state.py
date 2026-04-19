@@ -170,11 +170,37 @@ def test_zero_filter_skips_binary_sensors(state: InverterState) -> None:
 
 
 def test_zero_filter_first_read_none(state: InverterState) -> None:
-    """Test that first read of zero on a new sensor is accepted (oldv is None)."""
+    """Test that first read of zero is filtered even when oldv is None."""
     a = Sensor(1, "Power")
     state.track(a)
     assert state[a] is None
 
-    # First read is zero - should be accepted since there's no previous value
+    # First zero after launch should be filtered
+    state.update({1: 0})
+    assert state[a] is None
+
+    state.update({1: 0})
+    assert state[a] is None
+
+    # Third consecutive zero accepted
+    state.update({1: 0})
+    assert state[a] == 0
+
+
+def test_zero_filter_accepts_when_previous_was_zero(state: InverterState) -> None:
+    """Test that zero is accepted immediately if previous value was already zero."""
+    a = Sensor(1, "Power")
+    state.track(a)
+
+    state.update({1: 500})
+    assert state[a] == 500
+
+    # Get to zero via 3 consecutive reads
+    state.update({1: 0})
+    state.update({1: 0})
+    state.update({1: 0})
+    assert state[a] == 0
+
+    # Now another zero should pass through immediately (oldv is already 0)
     state.update({1: 0})
     assert state[a] == 0

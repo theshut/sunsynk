@@ -96,12 +96,17 @@ class InverterState:
             if self.zero_filter and isinstance(newv, (int, float)) and not isinstance(sen, (RWSensor, BinarySensor)):
                 if newv == 0:
                     self._zero_count[sen] += 1
-                    if self._zero_count[sen] < self.zero_filter and oldv is not None and oldv != 0:
+                    if self._zero_count[sen] < self.zero_filter and oldv != 0:
                         _LOG.warning(
                             "zero_filter: ignoring zero for %s (%d/%d)",
                             sen.name, self._zero_count[sen], self.zero_filter,
                         )
                         continue
+                    if self._zero_count[sen] >= self.zero_filter:
+                        _LOG.warning(
+                            "zero_filter: accepting zero for %s after %d consecutive reads",
+                            sen.name, self._zero_count[sen],
+                        )
                 else:
                     self._zero_count[sen] = 0
 
