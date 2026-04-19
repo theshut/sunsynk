@@ -102,7 +102,7 @@ class InverterState:
                             sen.name, self._zero_count[sen], self.zero_filter,
                         )
                         continue
-                    if self._zero_count[sen] >= self.zero_filter:
+                    if self._zero_count[sen] == self.zero_filter:
                         _LOG.warning(
                             "zero_filter: accepting zero for %s after %d consecutive reads",
                             sen.name, self._zero_count[sen],
